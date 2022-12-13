@@ -8,28 +8,43 @@ import "./voterLibrary.sol";
 contract Post {
 
     using voterLib for voterLib.voters;
-    string public postContent;
+    string public postHash;
+    string public postLink;
     mapping (address => voterLib.voters) allVoters;
-    uint256 private voteRemove;
-    uint256 private totalVotes;
+    uint private voteRemove;
+    uint private totalVotes;
 
-    constructor(string memory content) {
-        postContent = content;
+    constructor(string memory hash, string memory link) {
+        postLink = link;
+        postHash = hash;
         voteRemove = 0;
         totalVotes = 0;
     }
 
+    function percent(uint numerator, uint denominator) private pure returns(uint quotient) {
+
+        // caution, check safe-to-multiply here
+        uint _numerator  = numerator * 10 ** (3);
+        // with rounding of last digit
+        uint _quotient =  ((_numerator / denominator) + 5) / 10;
+        return ( _quotient);
+    }
+
     function voteToRemove() public returns(string memory returnMsg){
         //this is where votes will be added
-        // TODO: add check to see if user already voted
         if (allVoters[msg.sender].hasVoted){
             returnMsg = "You have aready voted.";
         }else{
             allVoters[msg.sender].hasVoted=true;
             voteRemove += 1;
             totalVotes += 1;
+            returnMsg="Vote successfully saved";
         }
-        // TODO: check to see if content should be removed
+        if (totalVotes > 5 && percent(voteRemove,totalVotes) > 50){
+            postLink=" ";
+            returnMsg= "Voting completed, link removed";
+        }
+ 
     }
 
     function voteToKeep() public returns(string memory returnMsg){
@@ -38,6 +53,7 @@ contract Post {
         }else{
             allVoters[msg.sender].hasVoted=true;
             totalVotes += 1;
+            returnMsg="Vote successfully saved";
         }
     }
 
@@ -45,7 +61,6 @@ contract Post {
         string memory rmvVotes;
         rmvVotes = Strings.toString(voteRemove);
 
-        // return abi.encodePacked("Votes to remove: ", Strings.toString(voteRemove), "Total votes: ", Strings.toString(totalVotes));
         votesToRemove = rmvVotes;
     
     }
